@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+    <link rel="alternate icon" href="/assets/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>乒乓积分板</title>
+
+    <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+
+    <style>
+      .table {
+        width: fit-content;
+      }
+
+      .wrapper {
+        border: none;
+        background-color: transparent;
+      }
+
+      .score-score {
+        font-weight: bold;
+      }
+
+      .score-comment {
+        white-space: pre-line;
+        color: #090;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="height: 50px"></div>
+    <div class="container">
+      <h1>标题未定</h1>
+      <hr />
+      <div class="input-group mb-3" style="width: 100%; max-width: 500px">
+        <input type="text" class="form-control" style="width: fit-content" id="addSeriesInput" />
+        <button class="form-control btn btn-primary" onclick="addSeries();">添加比赛</button>
+      </div>
+      <div id="content"></div>
+    </div>
+  </body>
+  <script>
+    var popovers = [];
+    var data = {};
+
+    function refreshDOM() {
+      const content = $("#content");
+
+      content.empty();
+      popovers.forEach((popover) => {
+        popover.dispose();
+      });
+      popovers = [];
+
+      data.data.forEach((series, sid) => {
+        const count = series.names.length;
+        const seriesRoot = $("<div>").appendTo(content);
+
+        const title = $(`<h2 class="m-2" style="float:left;" id="title-${sid}">`).text(series.title).appendTo(seriesRoot);
+        const titleInput = $(`<input type="text" class="form-control m-2" style="float:left;width:fit-content;" id="titleInput-${sid}">`).val(series.title).hide().appendTo(seriesRoot);
+        const changeName = $(`<button class="btn btn-primary m-2" onclick="modifyTitle(${sid});">改名</button>`).appendTo(seriesRoot);
+        const deleteSeries = $(`<button class="btn btn-danger m-2" onclick="deleteSeries(${sid});">删除</button>`).appendTo(seriesRoot);
+
+        if (series.names.length > 0) {
+          const body = $("<div>").appendTo(seriesRoot);
+          const table = $('<table class="table table-bordered m-2">').appendTo(body);
+          const thead = $("<tr>").appendTo($("<thead>").appendTo(table));
+          const width = `${100 / (count + 1)}%`;
+          $("<th>").appendTo(thead).css("width", width);
+          series.names.forEach((name, nid) => {
+            const th = $("<th>").appendTo(thead).css("width", width).append(createPlayerName(sid, nid, 0));
+          });
+
+          const tbody = $("<tbody>").appendTo(table);
+          series.names.forEach((name, i) => {
+            const tr = $("<tr>").appendTo(tbody);
+            $("<td>").appendTo(tr).append(createPlayerName(sid, i, 1));
+
+            for (var j = 0; j < series.names.length; j++) {
+              if (j < i) {
+                $("<td>").append(createScoreEntry(sid, i, j)).appendTo(tr);
+              } else if (j == i) {
+                $("<td>").appendTo(tr).css("background-color", "#999");
+              } else {
+                $("<td>").appendTo(tr);
+              }
+            }
+          });
+        } else {
+          $('<p style="font-size:36px;font-style:italic;">无对局数据</p>').appendTo(seriesRoot);
+        }
+
+        const addPlayerGroup = $('<div class="input-group" style="width:100%;max-width:500px;">').appendTo(seriesRoot);
+        const addPlayerInput = $(`<input type="text" class="form-control" style="width:fit-content;" id="addPlayerInput-${sid}">`).appendTo(addPlayerGroup);
+        const addPlayer = $(`<button class="form-control btn btn-primary" onclick="addPlayer(${sid});">添加选手</button>`).appendTo(addPlayerGroup);
+        seriesRoot.append('<div class="mb-5">');
+      });
+    }
+
+    function createScoreEntry(sid, i, j) {
+      const suffix = `${sid}-${i}-${j}`;
+      const wrapper = $(`<button class="wrapper" id="scoreWrapper-${suffix}">`);
+      const match = data.data[sid].scores[i - 1][j];
+
+      const info = $('<div class="score-info">');
+      info.appendTo(wrapper);
+      $('<span class="score-score">').text(`${match.score[0]}:${match.score[1]}`).appendTo(info);
+      info.append("<br/>");
+      $('<span class="score-comment">').text(match.comment).appendTo(info);
+
+      const form = $(`<div style="width:150px;" id="form-${suffix}">`);
+      form.append(
+        $('<div class="input-group mb-3">')
+          .append(`<input class="form-control" type="text" id="scoreA" value="${match.score[0]}">`)
+          .append(`<span class="input-group-text">:</span>`)
+          .append(`<input class="form-control" type="text" id="scoreB" value="${match.score[1]}">`)
+      );
+      form.append(`<textarea class="form-control mb-3" id="comment">${match.comment}</textarea>`);
+      form.append(`<button class="btn btn-primary w-100" onclick="modifyScore(${sid},${i},${j});">确定并关闭</button>`);
+
+      popovers.push(
+        new bootstrap.Popover(wrapper, {
+          placement: "top",
+          content: form[0].outerHTML,
+          html: true,
+          sanitize: false,
+          trigger: "click",
+        })
+      );
+
+      return wrapper;
+    }
+
+    function createPlayerName(sid, nid, extra) {
+      const wrapper = $(`<button class="wrapper" id="playerWrapper-${sid}-${nid}-${extra}">`).text(data.data[sid].names[nid]);
+      popovers.push(
+        new bootstrap.Popover(wrapper, {
+          placement: extra ? "left" : "top",
+          content: `<button class="btn btn-danger w-100" onclick="deletePlayer(${sid},${nid},${extra});">删除</button>`,
+          html: true,
+          sanitize: false,
+          trigger: "focus",
+        })
+      );
+      return wrapper;
+    }
+
+    function modifyScore(sid, i, j) {
+      const suffix = `${sid}-${i}-${j}`;
+      const form = $(`#form-${suffix}`);
+      const scoreA = parseInt(form.find("#scoreA").val());
+      const scoreB = parseInt(form.find("#scoreB").val());
+      const comment = form.find("#comment").val();
+
+      const newdata = { score: [scoreA, scoreB], comment: comment };
+
+      if (JSON.stringify(newdata) === JSON.stringify(data.data[sid].scores[i - 1][j])) {
+        popovers.forEach((popover) => {
+          popover.hide();
+        });
+        return;
+      }
+      data.data[sid].scores[i - 1][j] = newdata;
+
+      pushRemote();
+      pullRemote();
+      refreshDOM();
+    }
+
+    function modifyTitle(sid) {
+      const title = $(`#title-${sid}`);
+      const titleInput = $(`#titleInput-${sid}`);
+
+      if (title.is(":visible")) {
+        title.hide();
+        titleInput.show().val(title.text());
+      } else {
+        const newTitle = titleInput.val();
+        title.text(newTitle).show();
+        titleInput.hide();
+        if (data.data[sid].title !== newTitle) {
+          data.data[sid].title = newTitle;
+          pushRemote();
+          refreshDOM();
+        }
+      }
+    }
+
+    function addPlayer(sid) {
+      const newPlayer = $(`#addPlayerInput-${sid}`).val();
+      if (newPlayer === "") return;
+      if (data.data[sid].names.length > 0) {
+        var tmp = [];
+        for (var i = 0; i < data.data[sid].names.length; i++) {
+          tmp.push({ score: [0, 0], comment: "" });
+        }
+        data.data[sid].scores.push(tmp);
+      }
+      data.data[sid].names.push(newPlayer);
+      pushRemote();
+      refreshDOM();
+    }
+
+    function deletePlayer(sid, nid, extra) {
+      var series = data.data[sid];
+      if (window.confirm(`确定要从 ${series.title} 中删除 ${series.names[nid]} 吗？`)) {
+        series.names.splice(nid, 1);
+        series.scores.forEach((arr, i) => {
+          if (i >= nid) {
+            arr.splice(nid, 1);
+          }
+        });
+        series.scores.splice(nid - 1, 1);
+        pushRemote();
+        refreshDOM();
+      }
+    }
+
+    function deleteSeries(sid) {
+      if (window.confirm(`确定要删除 ${data.data[sid].title} 吗？`)) {
+        data.data.splice(sid, 1);
+        pushRemote();
+        refreshDOM();
+      }
+    }
+
+    function addSeries() {
+      const newSeries = $("#addSeriesInput").val();
+      if (newSeries === "") return;
+      data.data.unshift({ title: newSeries, names: [], score: [] });
+      pushRemote();
+      refreshDOM();
+    }
+
+    function pullRemote() {
+      $.ajax({
+        url: "/api",
+        async: false,
+        error: () => {
+          console.log("pull failed");
+        },
+        success: (res) => {
+          data = res;
+          console.log("pull success");
+        },
+      });
+    }
+
+    function pushRemote() {
+      $.ajax({
+        url: "/api",
+        method: "POST",
+        async: false,
+        contentType: "application/json",
+        data: JSON.stringify(data),
+        error: (jqXHR, status, error) => {
+          console.log("push failed");
+        },
+        success: (res) => {
+          console.log("push success");
+        },
+      });
+    }
+
+    pullRemote();
+    refreshDOM();
+  </script>
+</html>

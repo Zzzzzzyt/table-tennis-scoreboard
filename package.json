@@ -1,0 +1,17 @@
+{
+  "name": "table-tennis-scoreboard",
+  "version": "1.0.0",
+  "description": "A scoreboard for table tennis",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.17.2",
+    "greenlock-express": "^4.0.3",
+    "jsonschema": "^1.4.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "zzzyt",
+  "license": "MIT"
+}
