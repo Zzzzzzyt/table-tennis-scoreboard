@@ -47,7 +47,8 @@
   </body>
   <script>
     var popovers = [];
-    var data = {};
+    var data;
+    var safedata;
 
     function refreshDOM() {
       const content = $("#content");
@@ -67,15 +68,79 @@
         const changeName = $(`<button class="btn btn-primary m-2" onclick="modifyTitle(${sid});">改名</button>`).appendTo(seriesRoot);
         const deleteSeries = $(`<button class="btn btn-danger m-2" onclick="deleteSeries(${sid});">删除</button>`).appendTo(seriesRoot);
 
-        if (series.names.length > 0) {
+        if (count > 0) {
+          var points = new Array(count);
+          points.fill(0);
+          var wins = [];
+          for (var i = 0; i < count; i++) {
+            var tmp = new Array(count);
+            tmp.fill(0);
+            wins.push(tmp);
+          }
+
+          var warning = false;
+          for (var i = 1; i < count; i++) {
+            for (var j = 0; j < i; j++) {
+              const si = series.scores[i - 1][j].score[0];
+              const sj = series.scores[i - 1][j].score[1];
+              if (si < 0) si = -1;
+              if (sj < 0) sj = -1;
+              if (si < sj) {
+                if (si != -1) points[i] += 1;
+                points[j] += 2;
+                wins[i][j] = -1;
+                wins[j][i] = 1;
+              } else if (si > sj) {
+                if (sj != -1) points[j] += 1;
+                points[i] += 2;
+                wins[j][i] = -1;
+                wins[i][j] = 1;
+              } else {
+                if (si != -1 || sj != -1) {
+                  warning = true;
+                  //??????????
+                  points[i] += 1;
+                  points[j] += 1;
+                }
+              }
+            }
+          }
+
+          var sorted = [];
+          var rank = new Array(count);
+          for (var i = 0; i < count; i++) {
+            sorted.push(i);
+          }
+          sorted.sort((i, j) => {
+            if (points[i] > points[j]) {
+              return -1;
+            } else if (points[i] < points[j]) {
+              return 1;
+            } else {
+              console.log(i, j, wins[i][j]);
+              return -wins[i][j];
+            }
+          });
+          console.log(wins);
+          var rankCounter = 0;
+          sorted.forEach((i, index) => {
+            const j = sorted[index - 1];
+            if (index == 0 || points[sorted[i]] != points[j] || wins[i][j] != 0) {
+              rankCounter = index;
+            }
+            rank[i] = rankCounter;
+          });
+
           const body = $("<div>").appendTo(seriesRoot);
           const table = $('<table class="table table-bordered m-2">').appendTo(body);
           const thead = $("<tr>").appendTo($("<thead>").appendTo(table));
-          const width = `${100 / (count + 1)}%`;
+          const width = `${100 / (count + 2)}%`;
           $("<th>").appendTo(thead).css("width", width);
           series.names.forEach((name, nid) => {
             const th = $("<th>").appendTo(thead).css("width", width).append(createPlayerName(sid, nid, 0));
           });
+          $("<th>积分</th>").appendTo(thead);
+          $("<th>排名</th>").appendTo(thead);
 
           const tbody = $("<tbody>").appendTo(table);
           series.names.forEach((name, i) => {
@@ -91,6 +156,9 @@
                 $("<td>").appendTo(tr);
               }
             }
+
+            $(`<td>${points[i]}</td>`).appendTo(tr);
+            $(`<td>${rank[i] + 1}</td>`).appendTo(tr);
           });
         } else {
           $('<p style="font-size:36px;font-style:italic;">无对局数据</p>').appendTo(seriesRoot);
@@ -99,6 +167,7 @@
         const addPlayerGroup = $('<div class="input-group" style="width:100%;max-width:500px;">').appendTo(seriesRoot);
         const addPlayerInput = $(`<input type="text" class="form-control" style="width:fit-content;" id="addPlayerInput-${sid}">`).appendTo(addPlayerGroup);
         const addPlayer = $(`<button class="form-control btn btn-primary" onclick="addPlayer(${sid});">添加选手</button>`).appendTo(addPlayerGroup);
+
         seriesRoot.append('<div class="mb-5">');
       });
     }
@@ -233,7 +302,7 @@
     function addSeries() {
       const newSeries = $("#addSeriesInput").val();
       if (newSeries === "") return;
-      data.data.unshift({ title: newSeries, names: [], score: [] });
+      data.data.unshift({ title: newSeries, names: [], scores: [] });
       pushRemote();
       refreshDOM();
     }
@@ -247,6 +316,7 @@
         },
         success: (res) => {
           data = res;
+          safedata = JSON.parse(JSON.stringify(data));
           console.log("pull success");
         },
       });
@@ -261,6 +331,7 @@
         data: JSON.stringify(data),
         error: (jqXHR, status, error) => {
           console.log("push failed");
+          data = JSON.parse(JSON.stringify(safedata));
         },
         success: (res) => {
           console.log("push success");
