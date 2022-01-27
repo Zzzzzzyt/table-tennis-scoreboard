@@ -36,7 +36,11 @@
   <body>
     <div style="height: 50px"></div>
     <div class="container">
-      <h1>标题未定</h1>
+      <h1>简陋的乒乓积分板</h1>
+      <p>
+        by Zzzyt 2022<br />
+        Github@<a href="https://github.com/Zzzzzzyt/table-tennis-scoreboard" target="_blank">Zzzzzzyt/table-tennis-scoreboard</a>
+      </p>
       <hr />
       <div class="input-group mb-3" style="width: 100%; max-width: 500px">
         <input type="text" class="form-control" style="width: fit-content" id="addSeriesInput" />
@@ -81,8 +85,8 @@
           var warning = false;
           for (var i = 1; i < count; i++) {
             for (var j = 0; j < i; j++) {
-              const si = series.scores[i - 1][j].score[0];
-              const sj = series.scores[i - 1][j].score[1];
+              var si = series.scores[i - 1][j].score[0];
+              var sj = series.scores[i - 1][j].score[1];
               if (si < 0) si = -1;
               if (sj < 0) sj = -1;
               if (si < sj) {
