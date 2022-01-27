@@ -41,6 +41,10 @@
         by Zzzyt 2022<br />
         Github@<a href="https://github.com/Zzzzzzyt/table-tennis-scoreboard" target="_blank">Zzzzzzyt/table-tennis-scoreboard</a>
       </p>
+      <p>
+        点击表格中的分数可以修改比分和备注<br />
+        点击选手名称可以删除选手
+      </p>
       <hr />
       <div class="input-group mb-3" style="width: 100%; max-width: 500px">
         <input type="text" class="form-control" style="width: fit-content" id="addSeriesInput" />
@@ -157,7 +161,8 @@
               } else if (j == i) {
                 $("<td>").appendTo(tr).css("background-color", "#999");
               } else {
-                $("<td>").appendTo(tr);
+                // $("<td>").appendTo(tr);
+                $("<td>").append(createScoreEntry2(sid, i, j)).appendTo(tr);
               }
             }
 
@@ -195,7 +200,38 @@
           .append(`<input class="form-control" type="text" id="scoreB" value="${match.score[1]}">`)
       );
       form.append(`<textarea class="form-control mb-3" id="comment">${match.comment}</textarea>`);
-      form.append(`<button class="btn btn-primary w-100" onclick="modifyScore(${sid},${i},${j});">确定并关闭</button>`);
+      form.append(`<button class="btn btn-primary w-100" onclick="modifyScore(${sid},${i},${j});">保存并关闭</button>`);
+
+      popovers.push(
+        new bootstrap.Popover(wrapper, {
+          placement: "top",
+          content: form[0].outerHTML,
+          html: true,
+          sanitize: false,
+          trigger: "click",
+        })
+      );
+
+      return wrapper;
+    }
+
+    function createScoreEntry2(sid, i, j) {
+      const suffix = `${sid}-${i}-${j}`;
+      const wrapper = $(`<button class="wrapper" id="scoreWrapper2-${suffix}">`);
+      const match = data.data[sid].scores[j - 1][i];
+
+      const info = $('<div class="score-info">');
+      info.appendTo(wrapper);
+      $('<span class="score-score">').text(`${match.score[1]}:${match.score[0]}`).appendTo(info);
+
+      const form = $(`<div style="width:150px;" id="form2-${suffix}">`);
+      form.append(
+        $('<div class="input-group mb-3">')
+          .append(`<input class="form-control" type="text" id="scoreB" value="${match.score[1]}">`)
+          .append(`<span class="input-group-text">:</span>`)
+          .append(`<input class="form-control" type="text" id="scoreA" value="${match.score[0]}">`)
+      );
+      form.append(`<button class="btn btn-primary w-100" onclick="modifyScore2(${sid},${i},${j});">保存并关闭</button>`);
 
       popovers.push(
         new bootstrap.Popover(wrapper, {
@@ -240,6 +276,27 @@
         return;
       }
       data.data[sid].scores[i - 1][j] = newdata;
+
+      pushRemote();
+      pullRemote();
+      refreshDOM();
+    }
+
+    function modifyScore2(sid, i, j) {
+      const suffix = `${sid}-${i}-${j}`;
+      const form = $(`#form2-${suffix}`);
+      const scoreA = parseInt(form.find("#scoreA").val());
+      const scoreB = parseInt(form.find("#scoreB").val());
+
+      const newdata = { score: [scoreA, scoreB], comment: data.data[sid].scores[j - 1][i].comment };
+
+      if (JSON.stringify(newdata) === JSON.stringify(data.data[sid].scores[j - 1][i])) {
+        popovers.forEach((popover) => {
+          popover.hide();
+        });
+        return;
+      }
+      data.data[sid].scores[j - 1][i] = newdata;
 
       pushRemote();
       pullRemote();
