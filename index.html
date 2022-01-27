@@ -129,7 +129,7 @@
           var rankCounter = 0;
           sorted.forEach((i, index) => {
             const j = sorted[index - 1];
-            if (index == 0 || points[sorted[i]] != points[j] || wins[i][j] != 0) {
+            if (index == 0 || points[i] != points[j] || wins[i][j] != 0) {
               rankCounter = index;
             }
             rank[i] = rankCounter;
