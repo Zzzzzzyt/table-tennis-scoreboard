@@ -121,11 +121,11 @@
             } else if (points[i] < points[j]) {
               return 1;
             } else {
-              console.log(i, j, wins[i][j]);
+              // console.log(i, j, wins[i][j]);
               return -wins[i][j];
             }
           });
-          console.log(wins);
+          // console.log(wins);
           var rankCounter = 0;
           sorted.forEach((i, index) => {
             const j = sorted[index - 1];
