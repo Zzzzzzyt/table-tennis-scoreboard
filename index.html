@@ -46,8 +46,13 @@
         点击选手名称可以删除选手
       </p>
       <hr />
+      <div class="input-group mb-3" style="width: 100%; max-width: 700px">
+        <input type="text" class="form-control" placeholder="版本备注" style="width: fit-content" id="addVersionComment" />
+        <button class="form-control btn btn-success" onclick="addVersion();">备份到历史</button>
+        <a class="form-control btn btn-primary" href="/backup">查看已备份的版本</a>
+      </div>
       <div class="input-group mb-3" style="width: 100%; max-width: 500px">
-        <input type="text" class="form-control" style="width: fit-content" id="addSeriesInput" />
+        <input type="text" class="form-control" placeholder="比赛名称" style="width: fit-content" id="addSeriesInput" />
         <button class="form-control btn btn-primary" onclick="addSeries();">添加比赛</button>
       </div>
       <div id="content"></div>
@@ -174,7 +179,7 @@
         }
 
         const addPlayerGroup = $('<div class="input-group" style="width:100%;max-width:500px;">').appendTo(seriesRoot);
-        const addPlayerInput = $(`<input type="text" class="form-control" style="width:fit-content;" id="addPlayerInput-${sid}">`).appendTo(addPlayerGroup);
+        const addPlayerInput = $(`<input type="text" class="form-control" placeholder="选手名称" style="width:fit-content;" id="addPlayerInput-${sid}">`).appendTo(addPlayerGroup);
         const addPlayer = $(`<button class="form-control btn btn-primary" onclick="addPlayer(${sid});">添加选手</button>`).appendTo(addPlayerGroup);
 
         seriesRoot.append('<div class="mb-5">');
@@ -366,6 +371,24 @@
       data.data.unshift({ title: newSeries, names: [], scores: [] });
       pushRemote();
       refreshDOM();
+    }
+
+    function addVersion() {
+      const comment = $("#addVersionComment").val();
+      if (comment === "") return;
+      $.ajax({
+        url: "/history",
+        method: "POST",
+        async: false,
+        contentType: "application/json",
+        data: JSON.stringify({ comment: comment }),
+        error: (jqXHR, status, error) => {
+          console.log("add version failed");
+        },
+        success: (res) => {
+          console.log("add version success");
+        },
+      });
     }
 
     function pullRemote() {

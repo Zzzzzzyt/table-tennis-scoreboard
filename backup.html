@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+    <link rel="alternate icon" href="/assets/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>乒乓积分板 - 历史版本</title>
+
+    <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+
+    <style>
+      .table {
+        width: fit-content;
+      }
+
+      .wrapper {
+        border: none;
+        background-color: transparent;
+      }
+
+      .score-score {
+        font-weight: bold;
+      }
+
+      .score-comment {
+        white-space: pre-line;
+        color: #090;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="height: 50px"></div>
+    <div class="container">
+      <h1>已备份的历史版本</h1>
+      <p>
+        <a class="btn btn-primary" href="/">返回</a>
+      </p>
+      <hr />
+      <div id="content"></div>
+    </div>
+  </body>
+  <script>
+    function revert(index) {
+      $.ajax({
+        url: "/history",
+        method: "POST",
+        async: false,
+        contentType: "application/json",
+        data: JSON.stringify({ choice: index }),
+        error: (jqXHR, status, error) => {
+          console.log("revert failed");
+        },
+        success: (res) => {
+          console.log("revert success");
+          window.location.href = window.location.href.replace("backup", "");
+        },
+      });
+    }
+
+    $.ajax({
+      url: "/history",
+      async: false,
+      error: () => {
+        console.log("pull failed");
+      },
+      success: (res) => {
+        const root = $("#content");
+        for (var index = res.history.length - 1; index >= 0; index--) {
+          const version = res.history[index];
+          // console.log(version, index);
+          root.append(`<h3><button class="btn btn-primary me-2" style="display:inline-block;" onclick="revert(${index});">回滚到此版本</button>${version.comment}</h3>`);
+          root.append(`<p>${version.time}</p>`);
+        }
+        console.log("pull success");
+      },
+    });
+  </script>
+</html>
