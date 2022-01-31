@@ -158,6 +158,9 @@ function writeToDisk(object) {
   fs.writeFileSync("data.json", JSON.stringify(object || global.data));
 }
 
+var config;
+config = JSON.parse(fs.readFileSync("config.json", "utf-8"));
+
 if (!fs.existsSync("data.json")) {
   writeToDisk(fallback);
 }
@@ -234,7 +237,7 @@ app.post("/history", (req, res) => {
 //   cluster: false,
 // }).serve(app);
 
-var server = app.listen(7777, function () {
+var server = app.listen(config.port, function () {
   var port = server.address().port;
   console.log(`Server started on port ${port}`);
 });
